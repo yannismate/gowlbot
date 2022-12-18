@@ -1,5 +1,5 @@
 package config
 
 type OwlBotConfig struct {
-	DiscordBotToken string
+	DiscordBotToken string `yaml:"discord-bot-token"`
 }

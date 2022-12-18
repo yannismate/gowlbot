@@ -3,3 +3,4 @@ config.yml
 *.so
 *.out
 *.test
+.idea

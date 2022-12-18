@@ -13,7 +13,7 @@ func ProvideConfig() (*OwlBotConfig, error) {
 	}
 
 	data := OwlBotConfig{}
-	err = yaml.Unmarshal(yfile, data)
+	err = yaml.Unmarshal(yfile, &data)
 	if err != nil {
 		return nil, err
 	}
