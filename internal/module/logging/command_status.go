@@ -69,6 +69,10 @@ func (m *Module) handleLoggingStatusCommand(interaction *discordgo.Interaction) 
 							Name:  MemberLeave.ToReadableString(),
 							Value: getEnabledString(MemberLeave),
 						},
+						{
+							Name:  MemberRoleChange.ToReadableString(),
+							Value: getEnabledString(MemberRoleChange),
+						},
 					},
 					Color:     util.EmbedColorInfo,
 					Timestamp: time.Now().Format(time.RFC3339),

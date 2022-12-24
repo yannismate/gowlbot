@@ -12,10 +12,11 @@ import (
 
 var (
 	defaultLoggingFormats = map[LogType]string{
-		MessageEdit:   "✏ <t:{time}> <#{channel_id}> **{author_full_name}** edited their message. Previous content: {previous_content}",
-		MessageDelete: "🗑 <t:{time}> <#{channel_id}> Message by **{author_full_name}** was deleted. Content: {previous_content}",
-		MemberJoin:    "📥 <t:{time}> <@{member_id}> ({member_full_name}) joined the server. Total members: {guild_member_count}",
-		MemberLeave:   "📤 <t:{time}> <@{member_id}> ({member_full_name}) left the server or got kicked. Total members: {guild_member_count}",
+		MessageEdit:      "✏ <t:{time}> <#{channel_id}> **{author_full_name}** edited their message. Previous content: {previous_content}",
+		MessageDelete:    "🗑 <t:{time}> <#{channel_id}> Message by **{author_full_name}** was deleted. Content: {previous_content}",
+		MemberJoin:       "📥 <t:{time}> <@{member_id}> ({member_full_name}) joined the server. Total members: {guild_member_count}",
+		MemberLeave:      "📤 <t:{time}> <@{member_id}> ({member_full_name}) left the server or got kicked. Total members: {guild_member_count}",
+		MemberRoleChange: "👥 <t:{time}> **{member_full_name}**'s roles changed: `{role_changes}`",
 	}
 )
 

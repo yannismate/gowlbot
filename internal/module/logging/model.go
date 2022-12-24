@@ -22,24 +22,27 @@ func (cm *CachedMessage) UnmarshalBinary(data []byte) error {
 type LogType string
 
 const (
-	MessageEdit   LogType = "message_edit"
-	MessageDelete LogType = "message_delete"
-	MemberJoin    LogType = "member_join"
-	MemberLeave   LogType = "member_leave"
+	MessageEdit      LogType = "message_edit"
+	MessageDelete    LogType = "message_delete"
+	MemberJoin       LogType = "member_join"
+	MemberLeave      LogType = "member_leave"
+	MemberRoleChange LogType = "member_role_change"
 )
 
 var (
 	logTypeReadableStringsMap = map[LogType]string{
-		MessageEdit:   "Message Edit",
-		MessageDelete: "Message Delete",
-		MemberJoin:    "Member Join",
-		MemberLeave:   "Member Leave",
+		MessageEdit:      "Message Edit",
+		MessageDelete:    "Message Delete",
+		MemberJoin:       "Member Join",
+		MemberLeave:      "Member Leave",
+		MemberRoleChange: "Member Role Change",
 	}
 	logTypeParseMap = map[string]LogType{
-		"message_edit":   MessageEdit,
-		"message_delete": MessageDelete,
-		"member_join":    MemberJoin,
-		"member_leave":   MemberLeave,
+		"message_edit":       MessageEdit,
+		"message_delete":     MessageDelete,
+		"member_join":        MemberJoin,
+		"member_leave":       MemberLeave,
+		"member_role_change": MemberRoleChange,
 	}
 )
 

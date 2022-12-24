@@ -45,7 +45,7 @@ func (m *Module) handleInteractionCreation(_ *discordgo.Session, interaction *di
 func (m *Module) MigrateSlashCommands(guildID string, oldCmds []*discordgo.ApplicationCommand) {
 	var cmdDmPermission = false
 	var adminMemberPermission int64 = discordgo.PermissionAdministrator
-	var version = "logging-1.4"
+	var version = "logging-1.5"
 
 	loggingTypeOption := discordgo.ApplicationCommandOption{
 		Name:        CommandOptionLoggingType,
@@ -67,6 +67,10 @@ func (m *Module) MigrateSlashCommands(guildID string, oldCmds []*discordgo.Appli
 			{
 				Name:  MemberLeave.ToReadableString(),
 				Value: MemberLeave,
+			},
+			{
+				Name:  MemberRoleChange.ToReadableString(),
+				Value: MemberRoleChange,
 			},
 		},
 		Required: true,

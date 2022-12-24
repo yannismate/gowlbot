@@ -28,5 +28,6 @@ func (m *Module) Start() {
 	}
 	m.registerMessageListeners()
 	m.registerMemberJoinLeaveListeners()
+	m.registerMemberRoleListeners()
 	m.registerSlashCommandListeners()
 }
