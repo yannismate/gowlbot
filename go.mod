@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/bwmarrin/discordgo v0.26.2-0.20221227182354-f184824b8c44
 	go.uber.org/fx v1.18.2
-	go.uber.org/zap v1.21.0
+	go.uber.org/zap v1.24.0
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/sqlite v1.4.3
 	gorm.io/gorm v1.24.2
