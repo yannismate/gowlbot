@@ -11,7 +11,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout
+      with:
+        fetch-depth: 0 # this will fetch the entire repository, but is the easiest way of getting git describe to work
+      uses: actions/checkout@v3
 
     - name: Set up Go
       uses: actions/setup-go@v3
@@ -19,7 +22,9 @@ jobs:
         go-version: 1.18
 
     - name: Build
-      run: go build -v ./...
+      run: |
+        go generate -v ./...
+        go build -v ./...
 
     - name: Test
       run: go test -v ./...
