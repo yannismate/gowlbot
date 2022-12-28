@@ -1,9 +1,5 @@
 package twitch
 
-type eventHandlerInstance struct {
-	handler eventHandler
-}
-
 type eventHandler interface {
 	Type() string
 	Handle(interface{})
@@ -14,7 +10,7 @@ type eventInstance interface {
 	Instance() interface{}
 }
 
-func (es *EventSub) distributeNotification(parsedMessage eventInstance) {
+func (es *EventSub) distributeEvent(parsedMessage eventInstance) {
 	handlers, ok := es.listeners[parsedMessage.Type()]
 	if !ok {
 		return
@@ -35,36 +31,53 @@ func (es *EventSub) AddHandler(handler interface{}) {
 }
 
 const (
-	MessageStreamOnlineEventType = "message_stream_online_event"
-	MessageStreamOfflineEventType = "message_stream_offline_event"
+	SessionWelcomeEventType   = "session_welcome_event"
+	SessionKeepaliveEventType = "session_keepalive_event"
+	SessionReconnectEventType = "session_reconnect_event"
+	NotificationEventType     = "notification_event"
 )
 
-type messageStreamOnlineEventHandler func(*MessageStreamOnlineEvent)
-func (eh messageStreamOnlineEventHandler) Type() string {
-	return MessageStreamOnlineEventType
+type sessionWelcomeEventHandler func(*SessionWelcomeEvent)
+
+func (eh sessionWelcomeEventHandler) Type() string {
+	return SessionWelcomeEventType
 }
-func (eh messageStreamOnlineEventHandler) Handle(i interface{}) {
-	if t, ok := i.(*MessageStreamOnlineEvent); ok {
+func (eh sessionWelcomeEventHandler) Handle(i interface{}) {
+	if t, ok := i.(*SessionWelcomeEvent); ok {
 		eh(t)
 	}
 }
 
-type messageStreamOfflineEventHandler func(*MessageStreamOfflineEvent)
-func (eh messageStreamOfflineEventHandler) Type() string {
-	return MessageStreamOfflineEventType
+type sessionKeepaliveEventHandler func(*SessionKeepaliveEvent)
+
+func (eh sessionKeepaliveEventHandler) Type() string {
+	return SessionKeepaliveEventType
 }
-func (eh messageStreamOfflineEventHandler) Handle(i interface{}) {
-	if t, ok := i.(*MessageStreamOfflineEvent); ok {
+func (eh sessionKeepaliveEventHandler) Handle(i interface{}) {
+	if t, ok := i.(*SessionKeepaliveEvent); ok {
+		eh(t)
+	}
+}
+
+type notificationEventHandler func(*NotificationEvent)
+
+func (eh notificationEventHandler) Type() string {
+	return NotificationEventType
+}
+func (eh notificationEventHandler) Handle(i interface{}) {
+	if t, ok := i.(*NotificationEvent); ok {
 		eh(t)
 	}
 }
 
 func handlerForInterface(itf interface{}) eventHandler {
 	switch v := itf.(type) {
-	case func(*MessageStreamOnlineEvent):
-		return messageStreamOnlineEventHandler(v)
-	case func(*MessageStreamOfflineEvent):
-		return messageStreamOfflineEventHandler(v)
+	case func(*SessionWelcomeEvent):
+		return sessionWelcomeEventHandler(v)
+	case func(*SessionKeepaliveEvent):
+		return sessionKeepaliveEventHandler(v)
+	case func(*NotificationEvent):
+		return notificationEventHandler(v)
 	}
 	return nil
 }
