@@ -11,12 +11,7 @@ func (m *Module) registerMemberRoleListeners() {
 }
 
 func (m *Module) handleMemberUpdate(_ *discordgo.Session, memberUpdate *discordgo.GuildMemberUpdate) {
-	// TODO: Wait for https://github.com/bwmarrin/discordgo/pull/1304
-	oldMember, err := m.discord.State.Member(memberUpdate.GuildID, memberUpdate.User.ID)
-	if err != nil {
-		m.sendErrorLogToDiscord(memberUpdate.GuildID, MemberRoleChange, "Roles of member "+memberUpdate.User.String()+" changed, but previous roles were not cached.")
-		return
-	}
+	oldMember := memberUpdate.BeforeUpdate
 
 	m.logger.Info("Member update!", zap.Any("old", oldMember.Roles), zap.Any("new", memberUpdate.Roles))
 	if added, removed, hasChanges := findRoleDifferences(oldMember.Roles, memberUpdate.Roles); hasChanges {

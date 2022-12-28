@@ -3,7 +3,7 @@ module github.com/yannismate/gowlbot
 go 1.18
 
 require (
-	github.com/bwmarrin/discordgo v0.26.1
+	github.com/bwmarrin/discordgo v0.26.2-0.20221227182354-f184824b8c44
 	go.uber.org/fx v1.18.2
 	go.uber.org/zap v1.21.0
 	gopkg.in/yaml.v3 v3.0.1
