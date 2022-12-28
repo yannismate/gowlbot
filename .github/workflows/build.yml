@@ -11,10 +11,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-
-    - name: Fetch git tags
-      run: git fetch --tags origin
+    - name: Checkout
+      with:
+        fetch-depth: 0 # this will fetch the entire repository, but is the easiest way of getting git describe to work
+      uses: actions/checkout@v3
 
     - name: Set up Go
       uses: actions/setup-go@v3
