@@ -73,6 +73,14 @@ func (m *Module) handleLoggingStatusCommand(interaction *discordgo.Interaction) 
 							Name:  MemberRoleChange.ToReadableString(),
 							Value: getEnabledString(MemberRoleChange),
 						},
+						{
+							Name:  GuildBanAdd.ToReadableString(),
+							Value: getEnabledString(GuildBanAdd),
+						},
+						{
+							Name:  GuildBanRemove.ToReadableString(),
+							Value: getEnabledString(GuildBanRemove),
+						},
 					},
 					Color:     util.EmbedColorInfo,
 					Timestamp: time.Now().Format(time.RFC3339),

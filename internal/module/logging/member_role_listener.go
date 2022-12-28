@@ -2,7 +2,6 @@ package logging
 
 import (
 	"github.com/bwmarrin/discordgo"
-	"go.uber.org/zap"
 	"strings"
 )
 
@@ -13,7 +12,6 @@ func (m *Module) registerMemberRoleListeners() {
 func (m *Module) handleMemberUpdate(_ *discordgo.Session, memberUpdate *discordgo.GuildMemberUpdate) {
 	oldMember := memberUpdate.BeforeUpdate
 
-	m.logger.Info("Member update!", zap.Any("old", oldMember.Roles), zap.Any("new", memberUpdate.Roles))
 	if added, removed, hasChanges := findRoleDifferences(oldMember.Roles, memberUpdate.Roles); hasChanges {
 		guild, err := m.discord.State.Guild(memberUpdate.GuildID)
 		var guildRoles []*discordgo.Role

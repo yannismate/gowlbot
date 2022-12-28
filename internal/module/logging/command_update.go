@@ -17,6 +17,8 @@ var (
 		MemberJoin:       "📥 <t:{time}> <@{member_id}> ({member_full_name}) joined the server. Total members: {guild_member_count}",
 		MemberLeave:      "📤 <t:{time}> <@{member_id}> ({member_full_name}) left the server or got kicked. Total members: {guild_member_count}",
 		MemberRoleChange: "👥 <t:{time}> **{member_full_name}**'s roles changed: `{role_changes}`",
+		GuildBanAdd:      "⛔️ <t:{time}> <@{member_id}> was banned.",
+		GuildBanRemove:   "✅ <t:{time}> <@{member_id}> was unbanned.",
 	}
 )
 

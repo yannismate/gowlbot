@@ -27,6 +27,8 @@ const (
 	MemberJoin       LogType = "member_join"
 	MemberLeave      LogType = "member_leave"
 	MemberRoleChange LogType = "member_role_change"
+	GuildBanAdd      LogType = "guild_ban_add"
+	GuildBanRemove   LogType = "guild_ban_remove"
 )
 
 var (
@@ -36,6 +38,8 @@ var (
 		MemberJoin:       "Member Join",
 		MemberLeave:      "Member Leave",
 		MemberRoleChange: "Member Role Change",
+		GuildBanAdd:      "User Banned",
+		GuildBanRemove:   "User Unbanned",
 	}
 	logTypeParseMap = map[string]LogType{
 		"message_edit":       MessageEdit,
@@ -43,6 +47,8 @@ var (
 		"member_join":        MemberJoin,
 		"member_leave":       MemberLeave,
 		"member_role_change": MemberRoleChange,
+		"guild_ban_add":      GuildBanAdd,
+		"guild_ban_remove":   GuildBanRemove,
 	}
 )
 
