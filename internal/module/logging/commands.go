@@ -42,7 +42,7 @@ func (m *Module) handleInteractionCreation(_ *discordgo.Session, interaction *di
 	}
 }
 
-func (m *Module) MigrateSlashCommands(guildID string, oldCmds []*discordgo.ApplicationCommand) {
+func (m *Module) MigrateSlashCommands(guildID string, oldCmds []*discordgo.ApplicationCommand) error {
 	var cmdDmPermission = false
 	var adminMemberPermission int64 = discordgo.PermissionAdministrator
 	var version = "logging-1.6"
@@ -155,7 +155,7 @@ func (m *Module) MigrateSlashCommands(guildID string, oldCmds []*discordgo.Appli
 				_, err := m.discord.ApplicationCommandEdit(m.config.Discord.ApplicationID, guildID, oldCmd.ID, &newLoggingCmd)
 				if err != nil {
 					m.logger.Error("Error updating logging command", zap.Any("guild", guildID), zap.Any("command", oldCmd.ID), zap.Error(err))
-					continue
+					return err
 				}
 			}
 			commandHandled = true
@@ -165,6 +165,8 @@ func (m *Module) MigrateSlashCommands(guildID string, oldCmds []*discordgo.Appli
 		_, err := m.discord.ApplicationCommandCreate(m.config.Discord.ApplicationID, guildID, &newLoggingCmd)
 		if err != nil {
 			m.logger.Error("Error creating logging command", zap.Any("guild", guildID), zap.Error(err))
+			return err
 		}
 	}
+	return nil
 }

@@ -11,38 +11,51 @@ import (
 	"time"
 )
 
-type subscriptionRequest struct {
-	Type      SubscriptionType               `json:"type"`
-	Version   string                         `json:"version"`
-	Condition map[string]string              `json:"condition"`
-	Transport subscriptionWebsocketTransport `json:"transport"`
-}
+const (
+	twitchOauthTokenEndpoint   = "https://id.twitch.tv/oauth2/token"
+	twitchHelixStreamsEndpoint = "https://api.twitch.tv/helix/streams"
+	twitchHelixUsersEndpoint   = "https://api.twitch.tv/helix/users"
+)
 
-type subscriptionWebsocketTransport struct {
-	Method    string `json:"method"`
-	SessionID string `json:"session_id"`
-}
+var (
+	ErrStatusCodeFailed = errors.New("non 2xx status code")
+	ErrParamListTooLong = errors.New("the parameter list is too long")
+)
 
 type clientCredentialsResponse struct {
 	AccessToken string `json:"access_token"`
 	ExpiresIn   int    `json:"expires_in"`
 }
 
-const (
-	twitchOauthTokenEndpoint        = "https://id.twitch.tv/oauth2/token"
-	twitchHelixSubscriptionEndpoint = "https://api.twitch.tv/helix/eventsub/subscriptions"
-)
+type StreamsResponse struct {
+	Data []struct {
+		ID           string `json:"id"`
+		UserID       string `json:"user_id"`
+		UserLogin    string `json:"user_login"`
+		UserName     string `json:"user_name"`
+		GameName     string `json:"game_name"`
+		Type         string `json:"type"`
+		Title        string `json:"title"`
+		ThumbnailURL string `json:"thumbnail_url"`
+	} `json:"data"`
+	Pagination struct {
+		Cursor *string `json:"cursor"`
+	} `json:"pagination"`
+}
 
-var (
-	ErrWebsocketNotConnected = errors.New("could not create a subscription since the websocket is not currently connected")
-	ErrResponseCodeNoSuccess = errors.New("non 2xx response")
-)
+type UsersResponse struct {
+	Data []struct {
+		ID          string `json:"id"`
+		Login       string `json:"login"`
+		DisplayName string `json:"display_name"`
+	} `json:"data"`
+}
 
-func (es *EventSub) UpdateAppAccessToken() error {
-	es.logger.Info("Fetching new Twitch app access token")
+func (t *Twitch) updateAppAccessToken() error {
+	t.logger.Info("Fetching new Twitch app access token")
 	params := url.Values{
-		"client_id":     []string{es.cfg.Twitch.ClientID},
-		"client_secret": []string{es.cfg.Twitch.ClientSecret},
+		"client_id":     []string{t.cfg.Twitch.ClientID},
+		"client_secret": []string{t.cfg.Twitch.ClientSecret},
 		"grant_type":    []string{"client_credentials"},
 	}
 
@@ -56,6 +69,9 @@ func (es *EventSub) UpdateAppAccessToken() error {
 	if err != nil {
 		return err
 	}
+	if res.StatusCode/100 != 2 {
+		return ErrStatusCodeFailed
+	}
 
 	resBody, err := ioutil.ReadAll(res.Body)
 	if err != nil {
@@ -67,53 +83,98 @@ func (es *EventSub) UpdateAppAccessToken() error {
 	if err != nil {
 		return err
 	}
-	es.appAccessToken = parsedRes.AccessToken
-	es.appAccessTokenExpiresAt = time.Now().Add(time.Second * time.Duration(parsedRes.ExpiresIn))
+	t.appAccessToken = parsedRes.AccessToken
+	t.appAccessTokenExpiresAt = time.Now().Add(time.Second * time.Duration(parsedRes.ExpiresIn))
 	return nil
 }
 
-func (es *EventSub) AddSubscription(subscriptionType SubscriptionType, conditions map[string]string) error {
-	if len(es.sessionID) == 0 {
-		return ErrWebsocketNotConnected
+func (t *Twitch) GetUsers(userLogins []string) (*UsersResponse, error) {
+	if len(userLogins) > 100 {
+		return nil, ErrParamListTooLong
 	}
-	if len(es.appAccessToken) == 0 || es.appAccessTokenExpiresAt.Before(time.Now()) {
-		err := es.UpdateAppAccessToken()
+	if t.appAccessTokenExpiresAt.Before(time.Now()) {
+		err := t.updateAppAccessToken()
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
-	requestData := subscriptionRequest{
-		Type:      subscriptionType,
-		Version:   "1",
-		Condition: conditions,
-		Transport: subscriptionWebsocketTransport{
-			Method:    "websocket",
-			SessionID: es.sessionID,
-		},
+
+	params := url.Values{"login": userLogins}
+
+	req, err := http.NewRequest(http.MethodGet, twitchHelixUsersEndpoint+"?"+params.Encode(), nil)
+	if err != nil {
+		return nil, err
 	}
 
-	jsonData, err := json.Marshal(requestData)
-	if err != nil {
-		return err
-	}
+	req.Header.Set("Client-Id", t.cfg.Twitch.ClientID)
+	req.Header.Set("Authorization", "Bearer "+t.appAccessToken)
 
-	request, err := http.NewRequest("POST", twitchHelixSubscriptionEndpoint, bytes.NewBuffer(jsonData))
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return err
-	}
-	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("Client-Id", es.cfg.Twitch.ClientID)
-	request.Header.Set("Authorization", "Bearer "+es.appAccessToken)
-
-	res, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if res.StatusCode/100 != 2 {
-		resBody, _ := ioutil.ReadAll(res.Body)
-		es.logger.Info("Twitch API responded with error", zap.Any("body", string(resBody)), zap.Any("code", res.StatusCode))
-		return ErrResponseCodeNoSuccess
+		return nil, ErrStatusCodeFailed
 	}
-	return nil
+
+	resBody, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	parsedRes := UsersResponse{}
+	err = json.Unmarshal(resBody, &parsedRes)
+	if err != nil {
+		return nil, err
+	}
+	return &parsedRes, nil
+}
+
+func (t *Twitch) GetStreams(channelIds []string) (*StreamsResponse, error) {
+	if len(channelIds) > 100 {
+		return nil, ErrParamListTooLong
+	}
+	if t.appAccessTokenExpiresAt.Before(time.Now()) {
+		err := t.updateAppAccessToken()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	params := url.Values{
+		"user_id": channelIds,
+		"first":   []string{"100"},
+	}
+
+	req, err := http.NewRequest(http.MethodGet, twitchHelixStreamsEndpoint+"?"+params.Encode(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Client-Id", t.cfg.Twitch.ClientID)
+	req.Header.Set("Authorization", "Bearer "+t.appAccessToken)
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if res.StatusCode/100 != 2 {
+		return nil, ErrStatusCodeFailed
+	}
+
+	resBody, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	parsedRes := StreamsResponse{}
+	err = json.Unmarshal(resBody, &parsedRes)
+	if err != nil {
+		return nil, err
+	}
+	if parsedRes.Pagination.Cursor != nil {
+		t.logger.Warn("Twitch returned pagination parameters when none were expected", zap.Any("channel_ids", channelIds))
+	}
+	return &parsedRes, nil
 }

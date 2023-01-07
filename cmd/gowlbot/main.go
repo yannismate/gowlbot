@@ -20,7 +20,7 @@ func main() {
 	providers = append(providers, db.ProvideDB)
 	providers = append(providers, cache.ProvideRedisClient)
 	providers = append(providers, discord.ProvideDiscordClient)
-	providers = append(providers, twitch.ProvideEventSub)
+	providers = append(providers, twitch.ProvideTwitch)
 	providers = append(providers, module.GetRegisteredModules()...)
 
 	fx.New(

@@ -4,47 +4,75 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/yannismate/gowlbot/internal/config"
 	"github.com/yannismate/gowlbot/internal/module/logging"
+	"github.com/yannismate/gowlbot/internal/module/notifications"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 )
+
+type BotModule interface {
+	Name() string
+	Start() error
+	MigrateSlashCommands(guildID string, oldCommands []*discordgo.ApplicationCommand) error
+}
 
 func GetRegisteredModules() []interface{} {
 	var modules []interface{}
 
 	modules = append(modules, logging.ProvideLoggingModule)
+	modules = append(modules, notifications.ProvideNotificationModule)
 
 	return modules
 }
 
-type ModuleStarter struct {
+type StartModuleInjection struct {
 	fx.In
-	Logger  *zap.Logger
-	Config  *config.OwlBotConfig
-	Discord *discordgo.Session
-	Logging logging.Module
+	Logger        *zap.Logger
+	Config        *config.OwlBotConfig
+	Discord       *discordgo.Session
+	Logging       *logging.Module
+	Notifications *notifications.Module
 }
 
-func StartModules(starter ModuleStarter) {
-	starter.Logger.Info("Starting Bot Modules")
-	starter.Logging.Start()
+func StartModules(smi StartModuleInjection) error {
+	moduleList := []BotModule{
+		smi.Logging,
+		smi.Notifications,
+	}
 
-	starter.Logger.Info("Migrating Guilds")
-	starter.Discord.AddHandler(func(_ *discordgo.Session, guildJoin *discordgo.GuildCreate) {
-		starter.migrateGuild(guildJoin.ID)
+	smi.Logger.Info("Starting Bot Modules")
+	for _, module := range moduleList {
+		smi.Logger.Info("Starting module '" + module.Name() + "'")
+		err := module.Start()
+		if err != nil {
+			smi.Logger.Error("Error during module startup", zap.String("module", module.Name()), zap.Error(err))
+			return err
+		}
+	}
+
+	migrateGuild := func(guildID string) {
+		oldCmds, err := smi.Discord.ApplicationCommands(smi.Config.Discord.ApplicationID, guildID)
+		if err != nil {
+			smi.Logger.Error("Error fetching old application commands", zap.Any("guild", guildID), zap.Error(err))
+			return
+		}
+
+		for _, module := range moduleList {
+			err = module.MigrateSlashCommands(guildID, oldCmds)
+			if err != nil {
+				smi.Logger.Error("Error migrating application commands", zap.String("guild", guildID), zap.String("module", module.Name()), zap.Error(err))
+				continue
+			}
+		}
+	}
+
+	smi.Logger.Info("Migrating Guilds")
+	for _, guild := range smi.Discord.State.Guilds {
+		migrateGuild(guild.ID)
+	}
+	smi.Discord.AddHandler(func(_ *discordgo.Session, guildJoin *discordgo.GuildCreate) {
+		migrateGuild(guildJoin.ID)
 	})
-	for _, guild := range starter.Discord.State.Guilds {
-		starter.migrateGuild(guild.ID)
-	}
 
-	starter.Logger.Info("Module startup completed")
-}
-
-func (ms *ModuleStarter) migrateGuild(guildID string) {
-	oldCmds, err := ms.Discord.ApplicationCommands(ms.Config.Discord.ApplicationID, guildID)
-	if err != nil {
-		ms.Logger.Error("Error fetching old application commands", zap.Any("guild", guildID), zap.Error(err))
-		return
-	}
-
-	ms.Logging.MigrateSlashCommands(guildID, oldCmds)
+	smi.Logger.Info("Module startup completed")
+	return nil
 }
