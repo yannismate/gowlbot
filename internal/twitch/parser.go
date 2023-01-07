@@ -21,7 +21,7 @@ func (es *EventSub) parseMessage(msg []byte) (eventInstance, error) {
 	if err != nil {
 		return nil, err
 	}
-	if event.Metadata.MessageTimestamp.Before(time.Now().Add(time.Minute * 10)) {
+	if event.Metadata.MessageTimestamp.Before(time.Now().Add(time.Minute * -10)) {
 		return nil, ErrEventTooOld
 	}
 	for _, recentID := range es.recentMessageIDs {
@@ -44,6 +44,8 @@ func (es *EventSub) parseMessage(msg []byte) (eventInstance, error) {
 		payloadIf = &SessionWelcomeEvent{}
 	case MessageSessionKeepalive:
 		payloadIf = &SessionKeepaliveEvent{}
+	case MessageSessionReconnect:
+		payloadIf = &SessionReconnectEvent{}
 	case MessageNotification:
 		payloadIf = &NotificationEvent{}
 	default:

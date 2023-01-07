@@ -1,19 +1,20 @@
 package twitch
 
 import (
+	"github.com/yannismate/gowlbot/internal/config"
+	"go.uber.org/zap"
 	"sync"
 	"testing"
-
-	"go.uber.org/zap"
+	"time"
 )
 
 func TestEventHandling(t *testing.T) {
 	es := EventSub{listeners: make(map[string][]eventHandler)}
 	wasCalled := false
-	es.AddHandler(func (event *NotificationEvent) {
+	es.AddHandler(func(event *NotificationEvent) {
 		wasCalled = true
 	})
-	es.AddHandler(func (event *SessionWelcomeEvent) {
+	es.AddHandler(func(event *SessionWelcomeEvent) {
 		t.Error("Wrong event listener was called")
 	})
 	es.distributeEvent(&NotificationEvent{})
@@ -27,14 +28,10 @@ func TestEventSub(t *testing.T) {
 	wg.Add(1)
 
 	logger, _ := zap.NewDevelopment()
-	es := EventSub{listeners: map[string][]eventHandler{}, logger: logger}
-	es.AddHandler(func (event *SessionWelcomeEvent) {
-		logger.Info("welcome")
-		wg.Done()
-	})
-	err := es.connectWebsocket(nil)
+	es, _ := ProvideEventSub(logger, &config.OwlBotConfig{Twitch: config.TwitchConfig{ClientID: "XXXX", ClientSecret: "XXXX"}})
+	time.Sleep(time.Second)
+	err := es.AddSubscription(SubscriptionStreamOnline, map[string]string{"broadcaster_user_id": "140551421"})
 	if err != nil {
 		t.Error(err)
 	}
-	wg.Wait()
 }

@@ -16,12 +16,16 @@ func (es *EventSub) distributeEvent(parsedMessage eventInstance) {
 		return
 	}
 	for _, handler := range handlers {
-		handler.Handle(parsedMessage.Instance())
+		go handler.Handle(parsedMessage.Instance())
 	}
 }
 
 func (es *EventSub) AddHandler(handler interface{}) {
 	newHandler := handlerForInterface(handler)
+	if newHandler == nil {
+		es.logger.Error("EventSub Handler not added, invalid interface type.")
+		return
+	}
 	handlers, ok := es.listeners[newHandler.Type()]
 	if !ok {
 		handlers = make([]eventHandler, 0)
@@ -59,6 +63,17 @@ func (eh sessionKeepaliveEventHandler) Handle(i interface{}) {
 	}
 }
 
+type sessionReconnectEventHandler func(*SessionReconnectEvent)
+
+func (eh sessionReconnectEventHandler) Type() string {
+	return SessionReconnectEventType
+}
+func (eh sessionReconnectEventHandler) Handle(i interface{}) {
+	if t, ok := i.(*SessionReconnectEvent); ok {
+		eh(t)
+	}
+}
+
 type notificationEventHandler func(*NotificationEvent)
 
 func (eh notificationEventHandler) Type() string {
@@ -76,6 +91,8 @@ func handlerForInterface(itf interface{}) eventHandler {
 		return sessionWelcomeEventHandler(v)
 	case func(*SessionKeepaliveEvent):
 		return sessionKeepaliveEventHandler(v)
+	case func(event *SessionReconnectEvent):
+		return sessionReconnectEventHandler(v)
 	case func(*NotificationEvent):
 		return notificationEventHandler(v)
 	}

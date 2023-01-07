@@ -17,5 +17,6 @@ type CacheConfig struct {
 }
 
 type TwitchConfig struct {
-	ClientID string `yaml:"client-id"`
+	ClientID     string `yaml:"client-id"`
+	ClientSecret string `yaml:"client-secret"`
 }
