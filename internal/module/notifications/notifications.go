@@ -1,19 +1,23 @@
 package notifications
 
 import (
+	"github.com/bwmarrin/discordgo"
+	"github.com/go-redis/redis/v9"
 	"github.com/yannismate/gowlbot/internal/twitch"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
 type Module struct {
-	logger *zap.Logger
-	db     *gorm.DB
-	twitch *twitch.Twitch
+	logger  *zap.Logger
+	db      *gorm.DB
+	twitch  *twitch.Twitch
+	discord *discordgo.Session
+	cache   *redis.Client
 }
 
-func ProvideNotificationModule(logger *zap.Logger, db *gorm.DB, twitch *twitch.Twitch) *Module {
-	return &Module{logger: logger, db: db, twitch: twitch}
+func ProvideNotificationModule(logger *zap.Logger, db *gorm.DB, twitch *twitch.Twitch, discord *discordgo.Session, cache *redis.Client) *Module {
+	return &Module{logger: logger, db: db, twitch: twitch, discord: discord, cache: cache}
 }
 
 func (m *Module) Name() string {
@@ -21,10 +25,13 @@ func (m *Module) Name() string {
 }
 
 func (m *Module) Start() error {
-	res, err := m.twitch.GetStreams([]string{"140551421"})
+	err := m.db.AutoMigrate(&GuildNotification{})
 	if err != nil {
 		return err
 	}
-	m.logger.Info("Got twitch user", zap.Any("user", res))
+
+	m.registerSlashCommandListeners()
+	m.startTwitchUpdateTimer()
+
 	return nil
 }

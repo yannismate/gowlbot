@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"go.uber.org/zap"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
@@ -29,14 +29,15 @@ type clientCredentialsResponse struct {
 
 type StreamsResponse struct {
 	Data []struct {
-		ID           string `json:"id"`
-		UserID       string `json:"user_id"`
-		UserLogin    string `json:"user_login"`
-		UserName     string `json:"user_name"`
-		GameName     string `json:"game_name"`
-		Type         string `json:"type"`
-		Title        string `json:"title"`
-		ThumbnailURL string `json:"thumbnail_url"`
+		ID           string    `json:"id"`
+		UserID       string    `json:"user_id"`
+		UserLogin    string    `json:"user_login"`
+		UserName     string    `json:"user_name"`
+		GameName     string    `json:"game_name"`
+		Type         string    `json:"type"`
+		Title        string    `json:"title"`
+		ThumbnailURL string    `json:"thumbnail_url"`
+		StartedAt    time.Time `json:"started_at"`
 	} `json:"data"`
 	Pagination struct {
 		Cursor *string `json:"cursor"`
@@ -73,7 +74,7 @@ func (t *Twitch) updateAppAccessToken() error {
 		return ErrStatusCodeFailed
 	}
 
-	resBody, err := ioutil.ReadAll(res.Body)
+	resBody, err := io.ReadAll(res.Body)
 	if err != nil {
 		return err
 	}
@@ -118,7 +119,7 @@ func (t *Twitch) GetUsers(userLogins []string) (*UsersResponse, error) {
 		return nil, ErrStatusCodeFailed
 	}
 
-	resBody, err := ioutil.ReadAll(res.Body)
+	resBody, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +164,7 @@ func (t *Twitch) GetStreams(channelIds []string) (*StreamsResponse, error) {
 		return nil, ErrStatusCodeFailed
 	}
 
-	resBody, err := ioutil.ReadAll(res.Body)
+	resBody, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +175,7 @@ func (t *Twitch) GetStreams(channelIds []string) (*StreamsResponse, error) {
 		return nil, err
 	}
 	if parsedRes.Pagination.Cursor != nil {
-		t.logger.Warn("Twitch returned pagination parameters when none were expected", zap.Any("channel_ids", channelIds))
+		t.logger.Warn("Twitch returned pagination parameters when none were expected", zap.Any("channel_ids", channelIds), zap.Any("pagination", parsedRes.Pagination))
 	}
 	return &parsedRes, nil
 }

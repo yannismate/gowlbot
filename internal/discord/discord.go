@@ -7,6 +7,12 @@ import (
 	"go.uber.org/zap"
 )
 
+type VersionedSlashCommand struct {
+	Command discordgo.ApplicationCommand
+	CmdName string
+	Version string
+}
+
 func ProvideDiscordClient(cfg *config.OwlBotConfig, logger *zap.Logger) (*discordgo.Session, error) {
 	session, err := discordgo.New("Bot " + cfg.Discord.BotToken)
 	session.Identify.Intents = discordgo.IntentsAll
