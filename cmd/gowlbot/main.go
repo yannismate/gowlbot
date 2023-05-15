@@ -6,6 +6,7 @@ import (
 	"github.com/yannismate/gowlbot/internal/db"
 	"github.com/yannismate/gowlbot/internal/discord"
 	"github.com/yannismate/gowlbot/internal/module"
+	"github.com/yannismate/gowlbot/internal/twitch"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 )
@@ -19,6 +20,7 @@ func main() {
 	providers = append(providers, db.ProvideDB)
 	providers = append(providers, cache.ProvideRedisClient)
 	providers = append(providers, discord.ProvideDiscordClient)
+	providers = append(providers, twitch.ProvideTwitch)
 	providers = append(providers, module.GetRegisteredModules()...)
 
 	fx.New(

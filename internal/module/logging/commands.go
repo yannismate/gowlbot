@@ -2,8 +2,8 @@ package logging
 
 import (
 	"github.com/bwmarrin/discordgo"
+	"github.com/yannismate/gowlbot/internal/discord"
 	"github.com/yannismate/gowlbot/internal/util"
-	"go.uber.org/zap"
 )
 
 const (
@@ -42,7 +42,7 @@ func (m *Module) handleInteractionCreation(_ *discordgo.Session, interaction *di
 	}
 }
 
-func (m *Module) MigrateSlashCommands(guildID string, oldCmds []*discordgo.ApplicationCommand) {
+func (m *Module) GetSlashCommands() []discord.VersionedSlashCommand {
 	var cmdDmPermission = false
 	var adminMemberPermission int64 = discordgo.PermissionAdministrator
 	var version = "logging-1.6"
@@ -148,23 +148,11 @@ func (m *Module) MigrateSlashCommands(guildID string, oldCmds []*discordgo.Appli
 		},
 	}
 
-	commandHandled := false
-	for _, oldCmd := range oldCmds {
-		if oldCmd.Name == "logging" {
-			if oldCmd.Version != newLoggingCmd.Version {
-				_, err := m.discord.ApplicationCommandEdit(m.config.Discord.ApplicationID, guildID, oldCmd.ID, &newLoggingCmd)
-				if err != nil {
-					m.logger.Error("Error updating logging command", zap.Any("guild", guildID), zap.Any("command", oldCmd.ID), zap.Error(err))
-					continue
-				}
-			}
-			commandHandled = true
-		}
-	}
-	if !commandHandled {
-		_, err := m.discord.ApplicationCommandCreate(m.config.Discord.ApplicationID, guildID, &newLoggingCmd)
-		if err != nil {
-			m.logger.Error("Error creating logging command", zap.Any("guild", guildID), zap.Error(err))
-		}
+	return []discord.VersionedSlashCommand{
+		{
+			Command: newLoggingCmd,
+			CmdName: CommandNameLogging,
+			Version: version,
+		},
 	}
 }
